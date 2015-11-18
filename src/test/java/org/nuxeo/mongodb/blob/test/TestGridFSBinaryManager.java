@@ -23,6 +23,7 @@ import org.nuxeo.ecm.core.blob.binary.Binary;
 import org.nuxeo.ecm.core.blob.binary.BinaryGarbageCollector;
 import org.nuxeo.ecm.core.blob.binary.BinaryManagerStatus;
 import org.nuxeo.ecm.core.storage.mongodb.blob.GridFSBinaryManager;
+import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
 import org.nuxeo.runtime.test.runner.RuntimeFeature;
@@ -52,9 +53,10 @@ public class TestGridFSBinaryManager {
         if (binaryManager == null) {
             binaryManager = new GridFSBinaryManager();
             Map<String, String> config = new HashMap<String, String>();
-            config.put("server", "localhost");
-            config.put("dbname", "nuxeo");
-            config.put("bucket", "nxblobs");
+
+            config.put("server", Framework.getProperty("nuxeo.mongodb.server", "localhost"));
+            config.put("dbname", Framework.getProperty("nuxeo.mongodb.dbname", "nuxeo"));
+            config.put("bucket", Framework.getProperty("nuxeo.mongodb.gridfs.bucket", "nxblobs"));
             binaryManager.initialize("repo", config);
         }
         return binaryManager;
