@@ -19,6 +19,7 @@ package org.nuxeo.ecm.core.storage.mongodb;
 
 import java.net.UnknownHostException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.runtime.api.Framework;
 
@@ -26,10 +27,11 @@ import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.ServerAddress;
+import com.mongodb.gridfs.GridFS;
 
 /**
- * Helper to initialize the MongoDB client
- * 
+ * Helper to initialize the MongoDB client and GridFS client
+ *
  * @since 7.10
  */
 
@@ -39,31 +41,44 @@ public class MongoDBClientFactory {
 
     protected String dbname;
 
+    private String bucket;
+
     protected MongoClient client;
 
     public MongoDBClientFactory() {
     }
 
-    public MongoDBClientFactory(String server, String dbname) {
+    public MongoDBClientFactory(String server, String dbname, String bucket) {
         this();
         this.server = server;
         this.dbname = dbname;
+        this.bucket = bucket;
     }
 
     protected String getServer() {
-
-        if (server == null) {
+        if (StringUtils.isBlank(server)) {
             server = Framework.getProperty("nuxeo.mongodb.server");
         }
         return server;
     }
 
     protected String getDBName() {
-
-        if (dbname == null) {
+        if (StringUtils.isBlank(dbname)) {
             dbname = Framework.getProperty("nuxeo.mongodb.dbname");
         }
         return dbname;
+    }
+
+    protected String getBucket() {
+        if (StringUtils.isBlank(bucket)) {
+            bucket = Framework.getProperty("nuxeo.mongodb.gridfs.bucket");
+            // Fallback on a default name
+            if (StringUtils.isBlank(bucket)) {
+                bucket = "fs";
+            }
+        }
+
+        return bucket;
     }
 
     public void dispose() {
@@ -72,9 +87,8 @@ public class MongoDBClientFactory {
         }
     }
 
-
     public MongoClient initClient() throws UnknownHostException {
-        if (client==null) {
+        if (client == null) {
             if (getServer().startsWith("mongodb://")) {
                 client = new MongoClient(new MongoClientURI(getServer()));
             } else {
@@ -84,12 +98,11 @@ public class MongoDBClientFactory {
         return client;
     }
 
-
     public MongoClient getClient() {
-        if (client==null) {
+        if (client == null) {
             try {
                 initClient();
-            }  catch (UnknownHostException e) {
+            } catch (UnknownHostException e) {
                 throw new NuxeoException("Unable to init MongoDB client", e);
             }
         }
@@ -98,5 +111,9 @@ public class MongoDBClientFactory {
 
     public DB getDB() {
         return getClient().getDB(getDBName());
+    }
+
+    public GridFS instanciateGridFS() {
+        return new GridFS(getDB(), getBucket());
     }
 }

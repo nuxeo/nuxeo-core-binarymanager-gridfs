@@ -5,14 +5,12 @@
   <parent>
     <groupId>org.nuxeo</groupId>
     <artifactId>nuxeo-addons-parent</artifactId>
-    <version>7.4-SNAPSHOT</version>
+    <version>7.10-SNAPSHOT</version>
   </parent>
 
   <groupId>org.nuxeo.ecm.core</groupId>
   <artifactId>nuxeo-core-binarymanager-gridfs</artifactId>
-  <name>Nuxeo Binarymanager for GridFS</name>
-  <version>7.4-SNAPSHOT</version>
-  <description></description>
+  <name>Nuxeo Binary Manager for GridFS</name>
   <dependencies>
     <dependency>
       <groupId>org.nuxeo.common</groupId>
@@ -35,15 +33,14 @@
       <artifactId>jta</artifactId>
     </dependency>
     <dependency>
-        <groupId>org.mongodb</groupId>
-        <artifactId>mongo-java-driver</artifactId>
-     </dependency>
+      <groupId>org.mongodb</groupId>
+      <artifactId>mongo-java-driver</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.nuxeo.runtime</groupId>
       <artifactId>nuxeo-runtime-test</artifactId>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 
   <repositories>
@@ -70,53 +67,9 @@
     </repository>
   </repositories>
 
-  <build>
-    <plugins>
-     <plugin>
-      <artifactId>maven-compiler-plugin</artifactId>
-       <configuration>
-        <source>1.8</source>
-        <target>1.8</target>
-       </configuration>
-     </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>enforce-plugin-versions</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <requireReleaseDeps>
-                  <message>No Snapshots Allowed!</message>
-                  <onlyWhenRelease>true</onlyWhenRelease>
-                  <excludes>
-                    <exclude>com.googlecode.gmail4j:gmail4j:*</exclude>
-                  </excludes>
-                </requireReleaseDeps>
-              </rules>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-eclipse-plugin</artifactId>
-        <configuration>
-          <additionalProjectnatures>
-            <projectnature>org.nuxeo.ide.NuxeoNature</projectnature>
-          </additionalProjectnatures>
-          <classpathContainers>
-            <classpathContainer>org.eclipse.jdt.launching.JRE_CONTAINER</classpathContainer>
-            <classpathContainer>org.nuxeo.ide.SDK_CONTAINER</classpathContainer>
-            <classpathContainer>org.nuxeo.ide.SDK_TEST_CONTAINER</classpathContainer>
-          </classpathContainers>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
+  <scm>
+    <connection>scm:git:git://github.com/nuxeo/nuxeo-core-binarymanager-gridfs.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com:nuxeo/nuxeo-core-binarymanager-gridfs.git</developerConnection>
+    <url>https://github.com/nuxeo/nuxeo-core-binarymanager-gridfs</url>
+  </scm>
 </project>

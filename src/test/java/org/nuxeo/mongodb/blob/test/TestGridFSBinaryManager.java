@@ -56,7 +56,6 @@ public class TestGridFSBinaryManager {
             config.put("dbname", "nuxeo");
             config.put("bucket", "nxblobs");
             binaryManager.initialize("repo", config);
-            return binaryManager;
         }
         return binaryManager;
     }
@@ -97,7 +96,6 @@ public class TestGridFSBinaryManager {
         byte[] bytes = CONTENT.getBytes("UTF-8");
         Binary binary = binaryManager.getBinary(Blobs.createBlob(CONTENT));
         assertNotNull(binary);
-
 
         System.out.println(binary.getDigestAlgorithm());
         System.out.println(binary.getDigest());

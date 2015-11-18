@@ -16,6 +16,8 @@
  */
 package org.nuxeo.ecm.core.storage.mongodb.blob;
 
+import static org.nuxeo.ecm.core.blob.BlobProviderDescriptor.PREVENT_USER_UPDATE;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -24,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
-import org.nuxeo.common.utils.SizeUtils;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.core.blob.BlobManager;
@@ -36,13 +37,12 @@ import org.nuxeo.ecm.core.blob.binary.BinaryGarbageCollector;
 import org.nuxeo.ecm.core.blob.binary.BinaryManager;
 import org.nuxeo.ecm.core.blob.binary.BinaryManagerStatus;
 import org.nuxeo.ecm.core.model.Document;
+import org.nuxeo.ecm.core.storage.mongodb.MongoDBClientFactory;
 import org.nuxeo.runtime.api.Framework;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
-import com.mongodb.ServerAddress;
 import com.mongodb.gridfs.GridFS;
 import com.mongodb.gridfs.GridFSDBFile;
 import com.mongodb.gridfs.GridFSInputFile;
@@ -60,34 +60,19 @@ public class GridFSBinaryManager extends AbstractBinaryManager implements BlobPr
 
     protected GridFS gridFS;
 
-    // protected File cachedir;
-
-    // protected FileCache fileCache;
-
-    protected String bucketName;
-
-    protected long cacheSize = 1024 * 1024 * 25;
+    protected Map<String, String> properties;
 
     @Override
     public void initialize(String blobProviderId, Map<String, String> properties) throws IOException {
         super.initialize(blobProviderId, properties);
+        this.properties = properties;
         String server = properties.get("server");
         String dbname = properties.get("dbname");
-        bucketName = properties.get("bucket");
-        if (bucketName == null) {
-            bucketName = "fs";
-        }
-        String cacheSizeStr = properties.get("cacheSize");
-        if (cacheSizeStr != null) {
-            cacheSize = SizeUtils.parseSizeInBytes(cacheSizeStr);
-        }
+        String bucket = properties.get("bucket");
 
-        if (server.startsWith("mongodb://")) {
-            client = new MongoClient(new MongoClientURI(server));
-        } else {
-            client = new MongoClient(new ServerAddress(server));
-        }
-        gridFS = new GridFS(client.getDB(dbname), bucketName);
+        MongoDBClientFactory factory = new MongoDBClientFactory(server, dbname, bucket);
+        client = factory.getClient();
+        gridFS = factory.instanciateGridFS();
 
         garbageCollector = new GridFSBinaryGarbageCollector();
     }
@@ -123,7 +108,7 @@ public class GridFSBinaryManager extends AbstractBinaryManager implements BlobPr
 
         @Override
         public File getFile() {
-            // this API is a pain to implement on GridFS !
+            // TODO NXP-18405 Remove this dedicated Binary impl
             if (file == null || !file.exists()) {
                 try {
                     file = File.createTempFile("nuxeo-gridfs-", ".bin");
@@ -156,7 +141,6 @@ public class GridFSBinaryManager extends AbstractBinaryManager implements BlobPr
         }
 
         return new GridFSBinary(digest, length, blobProviderId);
-
     }
 
     @Override
@@ -181,8 +165,8 @@ public class GridFSBinaryManager extends AbstractBinaryManager implements BlobPr
     }
 
     @Override
-    public boolean supportsWrite() {
-        return true;
+    public boolean supportsUserUpdate() {
+        return !Boolean.parseBoolean(properties.get(PREVENT_USER_UPDATE));
     }
 
     public class GridFSBinaryGarbageCollector implements BinaryGarbageCollector {
@@ -197,7 +181,7 @@ public class GridFSBinaryManager extends AbstractBinaryManager implements BlobPr
 
         @Override
         public String getId() {
-            return "gridfs:" + bucketName;
+            return "gridfs:" + getGridFS().getBucketName();
         }
 
         @Override
@@ -225,7 +209,6 @@ public class GridFSBinaryManager extends AbstractBinaryManager implements BlobPr
 
         @Override
         public void start() {
-
             if (startTime != 0) {
                 throw new RuntimeException("Already started");
             }
