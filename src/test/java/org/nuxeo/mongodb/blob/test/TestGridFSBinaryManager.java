@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,6 +31,7 @@ import org.nuxeo.runtime.test.runner.RuntimeFeature;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCursor;
+import com.mongodb.MongoServerSelectionException;
 
 @RunWith(FeaturesRunner.class)
 @Features(RuntimeFeature.class)
@@ -52,7 +54,7 @@ public class TestGridFSBinaryManager {
     protected GridFSBinaryManager getBinaryManager() throws IOException {
         if (binaryManager == null) {
             binaryManager = new GridFSBinaryManager();
-            Map<String, String> config = new HashMap<String, String>();
+            Map<String, String> config = new HashMap<>();
 
             config.put("server", Framework.getProperty("nuxeo.mongodb.server", "localhost"));
             config.put("dbname", Framework.getProperty("nuxeo.mongodb.dbname", "nuxeo"));
@@ -62,22 +64,22 @@ public class TestGridFSBinaryManager {
         return binaryManager;
     }
 
-    protected Set<String> listObjects() throws Exception {
+    protected Set<String> listObjects() throws IOException {
 
-        Set<String> res = new HashSet<String>();
+        Set<String> res = new HashSet<>();
 
-        DBCursor cursor = getBinaryManager().getGridFS().getFileList();
-
-        while (cursor.hasNext()) {
-            String digest = (String) cursor.next().get("filename");
-            res.add(digest);
+        try (DBCursor cursor = getBinaryManager().getGridFS().getFileList()) {
+            while (cursor.hasNext()) {
+                String digest = (String) cursor.next().get("filename");
+                res.add(digest);
+            }
         }
         return res;
     }
 
-    protected void removeAllObjects() throws Exception {
-        for (String id : listObjects()) {
-            getBinaryManager().getGridFS().remove(new BasicDBObject("filename", id));
+    protected void removeAllObjects() throws IOException {
+        for (String digest : listObjects()) {
+            removeObject(digest);
         }
     }
 
@@ -88,7 +90,11 @@ public class TestGridFSBinaryManager {
     @Before
     public void setUp() throws Exception {
         binaryManager = getBinaryManager();
-        removeAllObjects();
+        try {
+            removeAllObjects();
+        } catch (MongoServerSelectionException e) {
+            Assume.assumeNoException("Tests ignored in case Mongo server is not reachable.", e);
+        }
     }
 
     @Test
@@ -124,11 +130,9 @@ public class TestGridFSBinaryManager {
      */
     @Test
     public void testBinaryManagerGC() throws Exception {
-        Binary binary = binaryManager.getBinary(CONTENT_MD5);
-
         // store binary
         byte[] bytes = CONTENT.getBytes("UTF-8");
-        binary = binaryManager.getBinary(Blobs.createBlob(CONTENT));
+        Binary binary = binaryManager.getBinary(Blobs.createBlob(CONTENT));
         assertNotNull(binary);
         assertEquals(Collections.singleton(CONTENT_MD5), listObjects());
 
